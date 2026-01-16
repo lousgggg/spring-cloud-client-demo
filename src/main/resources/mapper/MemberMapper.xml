@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- namespace 必须对应你的 Mapper 接口的全限定名 -->
+<mapper namespace="com.wiley.luo.springcloudclientdemo.mapper.MemberMapper">
+
+    <!-- 1. 定义结果映射 (ResultMap) -->
+    <!-- 如果你的数据库字段名（下划线风格）和Java属性名（驼峰风格）不能自动匹配，或需要复杂映射，使用此配置 -->
+    <resultMap id="BaseResultMap" type="com.wiley.luo.springcloudclientdemo.entity.Member">
+        <!-- 主键字段映射 -->
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <!-- 普通字段映射 -->
+        <result column="username" property="username" jdbcType="VARCHAR"/>
+        <result column="email" property="email" jdbcType="VARCHAR"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <!-- 2. 可重用的SQL片段定义 -->
+    <sql id="Base_Column_List">
+        id, username, email, create_time
+    </sql>
+
+    <!-- 3. 插入操作 -->
+    <insert id="insert" parameterType="com.wiley.luo.springcloudclientdemo.entity.Member" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO ums_member
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="username != null">username,</if>
+            <if test="email != null">email,</if>
+            create_time, <!-- 假设数据库有默认时间，或由应用层设置 -->
+        </trim>
+        <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+            <if test="username != null">#{username, jdbcType=VARCHAR},</if>
+            <if test="email != null">#{email, jdbcType=VARCHAR},</if>
+            NOW(),
+        </trim>
+    </insert>
+
+    <!-- 4. 根据主键查询 -->
+    <select id="selectById" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM ums_member
+        WHERE id = #{id, jdbcType=BIGINT}
+    </select>
+
+    <!-- 5. 条件查询 (动态WHERE) -->
+    <select id="selectByCondition" parameterType="map" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM ums_member
+        <where>
+            <if test="username != null and username != ''">
+                AND username LIKE CONCAT('%', #{username, jdbcType=VARCHAR}, '%')
+            </if>
+            <if test="email != null and email != ''">
+                AND email = #{email, jdbcType=VARCHAR}
+            </if>
+            <if test="startTime != null">
+                AND create_time >= #{startTime, jdbcType=TIMESTAMP}
+            </if>
+            <if test="endTime != null">
+                AND create_time &lt;= #{endTime, jdbcType=TIMESTAMP}
+            </if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 6. 更新操作 (动态SET) -->
+    <update id="updateById" parameterType="com.wiley.luo.springcloudclientdemo.entity.Member">
+        UPDATE ums_member
+        <set>
+            <if test="username != null">username = #{username, jdbcType=VARCHAR},</if>
+            <if test="email != null">email = #{email, jdbcType=VARCHAR},</if>
+            update_time = NOW(),
+        </set>
+        WHERE id = #{id, jdbcType=BIGINT}
+    </update>
+
+    <!-- 7. 根据主键删除 -->
+    <delete id="deleteById" parameterType="java.lang.Long">
+        DELETE FROM ums_member
+        WHERE id = #{id, jdbcType=BIGINT}
+    </delete>
+
+    <!-- 8. 批量插入 (示例) -->
+    <insert id="batchInsert" parameterType="java.util.List" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO ums_member (username, email, create_time)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+            #{item.username, jdbcType=VARCHAR},
+            #{item.email, jdbcType=VARCHAR},
+            NOW()
+            )
+        </foreach>
+    </insert>
+
+</mapper>

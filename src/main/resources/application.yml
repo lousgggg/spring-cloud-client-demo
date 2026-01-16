@@ -1,0 +1,136 @@
+server:
+  port: 9006
+
+spring:
+  application:
+    name: client-demo1
+  profiles:
+    active: dev
+  config:
+    import[0]: nacos:config-client-dev.yml?group=DEFAULT_GROUP
+    import[1]: nacos:db1-dev.yml?group=DEFAULT_GROUP
+
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+        namespace: 654443d8-3b91-47d0-bb82-d7bac6446302
+        group: DEFAULT_GROUP
+      config:
+        server-addr: ${spring.cloud.nacos.discovery.server-addr}
+        namespace: ${spring.cloud.nacos.discovery.namespace}
+        file-extension: yml
+    sentinel:
+      transport:
+        # Sentinel控制台地址
+        dashboard: localhost:8858
+        # 应用与Sentinel控制台交互的端口，默认8719
+        port: 8722
+        heartbeat-interval-ms: 5000  # 心跳间隔
+      # 取消Sentinel对Spring MVC端点的保护
+#      filter:
+#        enabled: false
+      # 启用Sentinel对Feign的支持
+#      feign:
+#        enabled: true
+      # 开启Sentinel
+      enabled: true
+      # 规则数据源配置（使用Nacos持久化）
+      datasource:
+        flow:  # 流控规则
+          nacos:
+            server-addr: ${spring.cloud.nacos.discovery.server-addr}
+            namespace: ${spring.cloud.nacos.discovery.namespace}
+            data-id: ${spring.application.name}-flow-rules
+            group-id: SENTINEL_GROUP
+            data-type: json
+            rule-type: flow
+        degrade:  # 熔断降级规则
+          nacos:
+            server-addr: ${spring.cloud.nacos.discovery.server-addr}
+            namespace: ${spring.cloud.nacos.discovery.namespace}
+            data-id: ${spring.application.name}-degrade-rules
+            group-id: SENTINEL_GROUP
+            data-type: json
+            rule-type: degrade
+        param-flow:  # 热点参数规则
+          nacos:
+            server-addr: ${spring.cloud.nacos.discovery.server-addr}
+            namespace: ${spring.cloud.nacos.discovery.namespace}
+            data-id: ${spring.application.name}-param-rules
+            group-id: SENTINEL_GROUP
+            data-type: json
+            rule-type: param-flow
+        system:  # 系统规则
+          nacos:
+            server-addr: ${spring.cloud.nacos.discovery.server-addr}
+            namespace: ${spring.cloud.nacos.discovery.namespace}
+            data-id: ${spring.application.name}-system-rules
+            group-id: SENTINEL_GROUP
+            data-type: json
+            rule-type: system
+        authority:
+          nacos:
+            server-addr: ${spring.cloud.nacos.discovery.server-addr}
+            namespace: ${spring.cloud.nacos.discovery.namespace}
+            data-id: ${spring.application.name}-authority-rules
+            group-id: SENTINEL_GROUP
+            data-type: json
+            rule-type: authority
+
+  redis:
+    host: localhost
+    port: 6379
+    database: 0
+    password: 123456
+
+# Redisson 单节点配置
+redisson:
+  config: |
+    singleServerConfig:
+      address: redis://localhost:6379
+
+      # 数据库索引（与 spring.redis.database 保持一致）
+      database: ${spring.redis.database}
+
+      # 密码（没有密码时留空）
+      password: ${spring.redis.password}
+
+      # 连接池配置
+      connectionPoolSize: 64            # 连接池大小
+      connectionMinimumIdleSize: 24     # 最小空闲连接数
+      idleConnectionTimeout: 10000      # 空闲连接超时时间(ms)
+      connectTimeout: 10000             # 连接超时时间(ms)
+      timeout: 3000                     # 命令等待超时时间(ms)
+
+      # 重试配置
+      retryAttempts: 3                  # 命令失败重试次数
+      retryInterval: 1500               # 命令重试间隔(ms)
+
+      # 订阅连接池
+      subscriptionConnectionPoolSize: 50
+      subscriptionConnectionMinimumIdleSize: 1
+
+      # 其他配置
+      clientName: "${spring.application.name}"  # 客户端名称
+      pingConnectionInterval: 30000     # 心跳检测间隔(ms)
+      keepAlive: true                   # TCP保持连接
+      tcpNoDelay: true                  # 禁用Nagle算法
+
+    # 线程池配置
+    threads: 16                         # 处理Redis服务器响应线程数
+    nettyThreads: 32                    # Netty线程数
+
+    # 序列化配置（推荐JsonJacksonCodec）
+    codec: !<org.redisson.codec.JsonJacksonCodec> {}
+
+    # 传输模式
+    transportMode: "NIO"
+
+    # 锁配置（可选）
+    lockWatchdogTimeout: 30000          # 锁看门狗超时时间(ms)
+
+logging:
+  level:
+    com.alibaba.cloud.nacos.client: DEBUG
+    com.alibaba.nacos.client.config: DEBUG
